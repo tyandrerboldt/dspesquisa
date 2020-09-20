@@ -1,17 +1,166 @@
-import React from 'react';
-import { StyleSheet, View, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { FontAwesome5 as Icon } from '@expo/vector-icons'
+import { StyleSheet, View, TextInput, Text, Alert } from 'react-native';
 import Header from '../../components/Header';
+import PlatformCard from '../../components/PlatformCard';
+import { GamePlatform } from '../../components/PlatformCard/types';
+import { Game } from './types'
+import RNPickerselect from 'react-native-picker-select';
+import axios from 'axios';
+import { RectButton } from 'react-native-gesture-handler';
+
+const placeholder = {
+  label: 'Selecione o game',
+  value: null
+}
+
+const BASE_URL = "http://192.168.0.100:8080"
+
+const mapSelectValue = (games:Game[]) => {
+  return games.map(game => ({
+    ...game,
+    label: game.title,
+    value: game.id,
+  }));
+}
 
 const CreateRecord = () => {
+
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [platform, setPlatform] = useState<GamePlatform>();
+  const [selectedGame, setSelectedGame] = useState('');
+  const [allGames, setAllGames] = useState<Game[]>([]);
+  const [filteredGames, setFilteredGames] = useState<Game[]>([]);
+
+  useEffect(() => {
+    axios.get(`${BASE_URL}/games`)
+    .then(response => {
+      const selectValues = mapSelectValue(response.data);
+      setAllGames(selectValues); 
+      setName('');   
+      setAge('');
+      setSelectedGame('');
+      setPlatform(undefined);
+    }).catch(() => {
+      Alert.alert('Erro ao listar os jogos!')
+    });
+  }, [])
+
+  const handleChangePlatform = (selectedPlatform:GamePlatform) => {
+    setPlatform(selectedPlatform);
+    const gamesByPlatform = allGames.filter(game => game.platform === selectedPlatform);
+    setFilteredGames(gamesByPlatform);
+  }
+
+  const handleSubmit = () => {
+    const payload = {name, age, gameId: selectedGame };
+    axios.post(`${BASE_URL}/records`, payload)
+    .then(() => {
+      Alert.alert('Dados salvos!')
+    })
+    .catch(() => {
+      Alert.alert('Erro ao cadastrar!')
+    });
+  }
+
   return (
     <>
       <Header></Header>
-      <View>
-        <TextInput />
+      <View style={styles.container}>
+        <TextInput 
+          style={styles.inputText}
+          placeholder="Nome"
+          placeholderTextColor="#9E9E9E"
+          onChangeText={text => setName(text)}
+          value={name}
+          />
+        <TextInput 
+          style={styles.inputText}
+          placeholder="Idade"
+          keyboardType="numeric"
+          placeholderTextColor="#9E9E9E"
+          maxLength={3}
+          onChangeText={text => setAge(text)}
+          value={age}
+          />
+        <View style={styles.platformContainer}>
+          <PlatformCard 
+            platform="PC" 
+            icon="laptop"
+            onChange={handleChangePlatform}
+            activePlatform={platform}
+            />
+          <PlatformCard 
+            platform="XBOX" 
+            icon="xbox"
+            onChange={handleChangePlatform}
+            activePlatform={platform}
+            />
+          <PlatformCard 
+            platform="PLAYSTATION" 
+            icon="playstation"
+            onChange={handleChangePlatform}
+            activePlatform={platform}
+            />        
+        </View>
+        <RNPickerselect
+          onValueChange={value => {
+            setSelectedGame(value)
+          }}
+          value={selectedGame}
+          placeholder={placeholder}
+          items={filteredGames}
+          style={pickerSelectStyles}
+          Icon={() => {
+            return <Icon name="chevron-down" color="#9E9E9E" size={25} />
+          }}
+        ></RNPickerselect>
+        <View style={styles.footer}>
+          <RectButton onPress={handleSubmit} style={styles.button}>
+            <Text style={styles.buttonText}>
+              SALVAR
+            </Text>
+          </RectButton>
+        </View>
       </View>
     </>
   )
 }
+
+const pickerSelectStyles = StyleSheet.create({
+  inputAndroid: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    color: '#ED7947',
+    paddingRight: 30,
+    fontFamily: "Play_700Bold",
+    height: 50
+  },
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    color: '#ED7947',
+    paddingRight: 30,
+    fontFamily: "Play_700Bold",
+    height: 50
+  },  
+  placeholder: {
+    color: '#9E9E9E',
+    fontSize: 16,
+    fontFamily: "Play_700Bold",
+  },
+  iconContainer: {
+    top: 10,
+    right: 12,
+  }
+})
 
 const styles = StyleSheet.create({
   container: {
@@ -36,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   footer: {
-    marginTop: '15%',
+    marginTop: '6%',
     alignItems: 'center',
   },
   button: {
