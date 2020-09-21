@@ -44,6 +44,10 @@ yarn start
 ```
 #### Front - Mobile
 - Abrir o projeto "/front-mobile" no VScode
+- Executar:
+```sh 
+yarn 
+```
 - Alterar o BASE_URL dos arquivos abaixo para o endereço do seu backend:
 -- /src/pages/CreateRecord/index.tsx
 - Executar:
